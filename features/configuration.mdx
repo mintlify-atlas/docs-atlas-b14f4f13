@@ -1,0 +1,248 @@
+---
+title: Configuración
+description: Personaliza los datos de tu tienda y ajustes del sistema
+---
+
+## Configuración del Sistema
+
+El módulo de configuración permite personalizar la información de tu tienda que aparece en tickets, reportes y el sistema en general.
+
+## Acceder a Configuración
+
+Ve a **Configuración** en el menú principal o accede a `/datos`.
+
+<Note>
+  Los cambios en la configuración se aplican inmediatamente a todas las nuevas ventas y reportes.
+</Note>
+
+## Opciones de Configuración
+
+<Steps>
+  <Step title="Información de la Tienda">
+    <ParamField path="tienda_nombre" type="string" required>
+      Nombre completo de tu negocio (aparece en tickets y reportes)
+    </ParamField>
+
+    <ParamField path="tienda_telefono" type="string" required>
+      Número de teléfono de contacto
+    </ParamField>
+
+    <ParamField path="tienda_direccion" type="string" required>
+      Dirección física del establecimiento
+    </ParamField>
+
+    Ejemplo:
+    ```
+    Nombre: Abarrotes El Buen Precio
+    Teléfono: (55) 1234-5678
+    Dirección: Calle Principal #123, Col. Centro, Ciudad
+    ```
+  </Step>
+
+  <Step title="Personalización de Tickets">
+    <ParamField path="ticket_leyenda" type="string" required>
+      Mensaje que aparece al final de cada ticket
+    </ParamField>
+
+    Ejemplos de leyendas:
+    - "¡Gracias por su compra!"
+    - "Conserve su ticket para cambios y devoluciones"
+    - "Visítenos en www.mitienda.com"
+    - "Síguenos en redes sociales @mitienda"
+  </Step>
+
+  <Step title="Control de Folios">
+    <ParamField path="ventas_folio" type="integer" required>
+      Próximo número de folio a usar
+    </ParamField>
+
+    <Warning>
+      Modifica este valor solo si necesitas reiniciar la numeración o corregir un error. El sistema incrementa automáticamente este número con cada venta.
+    </Warning>
+
+    Los folios se formatean con 10 dígitos: `0000000001`, `0000000002`, etc.
+  </Step>
+</Steps>
+
+## Actualizar Configuración
+
+```php
+// app/Controllers/Configuracion.php
+public function update()
+{
+    $reglas = [
+        'tienda_nombre'    => ['label' => 'nombre', 'rules' => "required"],
+        'tienda_telefono'  => ['label' => 'teléfono', 'rules' => "required"],
+        'tienda_direccion' => ['label' => 'dirección', 'rules' => "required"],
+        'ticket_leyenda'   => ['label' => 'leyende de ticket', 'rules' => "required"],
+        'ventas_folio'     => ['label' => 'folio de venta', 'rules' => "required"],
+    ];
+
+    foreach ($post as $indice => $valor) {
+        $this->configuracionModel->actualizarRegistro($indice, $valor);
+    }
+}
+```
+
+## Estructura de la Tabla
+
+La configuración se almacena en la tabla `configuracion` con un diseño clave-valor:
+
+| nombre | valor |
+|--------|-------|
+| tienda_nombre | Mi Tienda |
+| tienda_telefono | 555-1234 |
+| tienda_direccion | Calle Principal 123 |
+| ticket_leyenda | Gracias por su compra |
+| ventas_folio | 1 |
+
+Este diseño permite agregar fácilmente nuevas configuraciones sin modificar la estructura de la tabla.
+
+## Uso en el Sistema
+
+### En Tickets PDF
+
+Los valores de configuración se inyectan en cada ticket:
+
+```php
+// app/Controllers/Ventas.php - generaTicket()
+$configuracionArray = [];
+foreach ($configuraciones as $configuracion) {
+    $configuracionArray[$configuracion['nombre']] = $configuracion['valor'];
+}
+
+$pdf->Multicell(60, 4, mb_convert_encoding(
+    $configuracionArray['tienda_nombre'], 
+    'ISO-8859-1', 'UTF-8'
+), 0, 'C', 0);
+```
+
+### En Reportes
+
+Los reportes también usan esta información para el encabezado.
+
+### Generación de Folios
+
+El sistema consulta y actualiza el folio automáticamente:
+
+```php
+// Obtener folio actual
+$folio = str_pad($configModel->ultimoFolio(), 10, 0, STR_PAD_LEFT);
+
+// Guardar venta con ese folio
+$idVenta = $this->ventasModel->insert([
+    'folio' => $folio,
+    // ...
+]);
+
+// Incrementar para próxima venta
+$configModel->siguienteFolio();
+```
+
+## Mejores Prácticas
+
+<Accordion title="Usa información completa y precisa">
+  - **Nombre completo:** No abrevies el nombre de tu negocio
+  - **Teléfono:** Incluye código de área para facilitar contacto
+  - **Dirección:** Dirección completa incluyendo colonia, ciudad y CP
+  - Esto es especialmente importante para cumplimiento fiscal
+</Accordion>
+
+<Accordion title="Leyendas cortas y claras">
+  - Máximo 2-3 líneas
+  - Mensajes positivos y profesionales
+  - Evita leyendas muy largas que hagan el ticket difícil de leer
+</Accordion>
+
+<Accordion title="Respaldo antes de cambiar folios">
+  Si necesitas modificar el número de folio:
+  1. Genera un reporte de ventas hasta la fecha
+  2. Respalda la base de datos
+  3. Anota el motivo del cambio
+  4. Actualiza el valor
+  
+  Esto mantiene trazabilidad en caso de auditorías.
+</Accordion>
+
+<Accordion title="Revisa cómo se ve en tickets">
+  Después de actualizar la configuración:
+  1. Realiza una venta de prueba
+  2. Verifica que la información se vea correcta en el ticket
+  3. Confirma que no hay errores de formato o texto cortado
+</Accordion>
+
+## Personalización Adicional
+
+### Logotipo
+
+Para agregar tu logotipo a tickets y reportes:
+
+1. Prepara tu logo en formato PNG
+2. Tamaño recomendado: 200x100 píxeles máximo
+3. Guárdalo como `public/images/logotipo.png`
+4. El sistema lo usará automáticamente
+
+<Tip>
+  Usa un logo con fondo transparente para mejor apariencia en los documentos PDF.
+</Tip>
+
+### Variables de Entorno
+
+Configuraciones técnicas adicionales se manejan en el archivo `.env`:
+
+```bash
+# URL base
+app.baseURL = 'http://localhost/pos-cdp-lite/public/'
+
+# Base de datos
+database.default.hostname = localhost
+database.default.database = pos-cdp-lite
+database.default.username = root
+database.default.password = password
+
+# Sesiones
+session.expiration = 7200
+session.savePath = writable/session
+```
+
+<Card
+  title="Configuración Avanzada"
+  icon="gear"
+  href="/guides/environment-config"
+>
+  Aprende sobre todas las variables de entorno disponibles
+</Card>
+
+## Limitaciones
+
+- No hay respaldo automático de configuración
+- No hay historial de cambios
+- No se puede configurar por sucursal (sistema de tienda única)
+- El logotipo debe reemplazarse manualmente por FTP/SSH
+
+<Info>
+  **POS CDP Pro** incluye:
+  - Configuración por sucursal
+  - Múltiples logos y temas
+  - Historial de cambios
+  - Backup automático de configuración
+</Info>
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Generación de Tickets"
+    icon="receipt"
+    href="/guides/ticket-generation"
+  >
+    Personaliza el diseño de tickets
+  </Card>
+  <Card
+    title="Variables de Entorno"
+    icon="file-code"
+    href="/guides/environment-config"
+  >
+    Configuración técnica del sistema
+  </Card>
+</CardGroup>

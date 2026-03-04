@@ -1,0 +1,80 @@
+---
+title: Modelos
+description: Capa de acceso a datos y lógica de base de datos
+---
+
+## Sistema de Modelos
+
+Los modelos en POS CDP Lite manejan toda la interacción con la base de datos usando el ORM de CodeIgniter 4.
+
+## Modelos Principales
+
+### UsuariosModel
+
+**Tabla:** `usuarios`
+
+**Métodos:**
+
+```php
+public function validaUsuario($usuario, $password)
+{
+    $user = $this->where('usuario', $usuario)->first();
+    
+    if ($user && password_verify($password, $user['password'])) {
+        return $user;
+    }
+    return null;
+}
+```
+
+### ProductosModel
+
+**Tabla:** `productos`
+
+**Métodos clave:**
+
+- `buscarPorCodigoNombre($valor)` - Búsqueda para autocompletado
+- `actualizaStock($id, $cantidad, $operador)` - Actualiza inventario
+- `productosInventario()` - Lista productos para reportes
+
+```php
+public function actualizaStock($id, $cantidad, $operador)
+{
+    $producto = $this->find($id);
+    
+    if ($operador == '+') {
+        $nueva_existencia = $producto['existencia'] + $cantidad;
+    } else {
+        $nueva_existencia = $producto['existencia'] - $cantidad;
+    }
+    
+    $this->update($id, ['existencia' => $nueva_existencia]);
+}
+```
+
+### VentasModel
+
+**Tabla:** `ventas`
+
+**Métodos:**
+
+- `mostrarVentas($activo)` - Lista ventas (activas/canceladas)
+- `ventasRango($inicio, $fin, $estatus)` - Ventas por fecha
+
+### ConfiguracionModel
+
+**Tabla:** `configuracion`
+
+**Métodos:**
+
+- `ultimoFolio()` - Obtiene próximo folio
+- `siguienteFolio()` - Incrementa contador
+- `actualizarRegistro($nombre, $valor)` - Actualiza configuración
+
+<Card
+  title="Arquitectura"
+  icon="diagram-project"
+  href="/development/architecture"
+>
+  Estructura general del sistema
+</Card>

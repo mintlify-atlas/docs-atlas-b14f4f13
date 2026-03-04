@@ -1,0 +1,354 @@
+---
+title: Ventas y Caja
+description: Procesa ventas, genera tickets y gestiona el historial de transacciones
+---
+
+## Caja de Cobro (POS)
+
+La interfaz de caja es el corazón del sistema, donde se procesan todas las ventas del día.
+
+### Acceder a la Caja
+
+Navega a **Caja** desde el menú principal o accede a `/caja`.
+
+<Note>
+  La caja requiere autenticación. Asegúrate de haber iniciado sesión.
+</Note>
+
+## Proceso de Venta
+
+<Steps>
+  <Step title="Buscar producto">
+    - Escanea el código de barras, o
+    - Escribe el código o nombre del producto
+    - Usa el autocompletado para seleccionarlo
+  </Step>
+
+  <Step title="Agregar al carrito">
+    El producto se agrega a la venta temporal con:
+    - Código y nombre
+    - Precio unitario
+    - Cantidad (inicial: 1)
+    - Importe (precio × cantidad)
+
+    ```php
+    // app/Controllers/Caja.php - inserta()
+    $data = [
+        'id_venta' => $idVenta,
+        'id_producto' => $idProducto,
+        'codigo' => $productoCodigo,
+        'nombre' => $productoNombre,
+        'precio' => $productoPrecioVenta,
+        'cantidad' => $cantidad,
+        'importe' => $subtotal,
+    ];
+    ```
+  </Step>
+
+  <Step title="Ajustar cantidades">
+    - **Aumentar:** Vuelve a agregar el mismo producto
+    - **Disminuir:** Haz clic en el ícono de eliminar (-)
+
+    El sistema valida existencias para productos inventariables:
+    ```php
+    if ($productoInventariable == 1 && $productoExistencia < $cantidad) {
+        $error = 'No hay suficientes existencias';
+    }
+    ```
+  </Step>
+
+  <Step title="Revisar total">
+    El total se actualiza automáticamente al agregar o quitar productos
+  </Step>
+
+  <Step title="Completar venta">
+    Haz clic en **Cobrar** para finalizar la transacción
+  </Step>
+</Steps>
+
+### Validaciones Automáticas
+
+El sistema realiza varias validaciones:
+
+<Accordion title="Producto existe y está activo">
+  ```php
+  $producto = $productosModel->where(['codigo' => $codigo, 'activo' => 1])->first();
+  if (!$producto) {
+      $error = 'No existe el producto';
+  }
+  ```
+</Accordion>
+
+<Accordion title="Existencias suficientes">
+  Solo para productos inventariables:
+  ```php
+  if ($productoInventariable == 1 && $productoExistencia < $cantidad) {
+      $error = 'No hay suficientes existencias';
+  }
+  ```
+</Accordion>
+
+<Accordion title="Actualización del carrito">
+  Si el producto ya está en el carrito, se actualiza la cantidad en lugar de crear una línea nueva.
+</Accordion>
+
+## Completar la Venta
+
+Al hacer clic en **Cobrar**, el sistema:
+
+<Steps>
+  <Step title="Genera folio consecutivo">
+    ```php
+    'folio' => str_pad($configModel->ultimoFolio(), 10, 0, STR_PAD_LEFT)
+    ```
+    Formato: `0000000001`, `0000000002`, etc.
+  </Step>
+
+  <Step title="Crea registro de venta">
+    ```php
+    $datos = [
+        'folio' => str_pad($configModel->ultimoFolio(), 10, 0, STR_PAD_LEFT),
+        'total' => $total,
+        'fecha' => date('Y-m-d H:i:s'),
+        'usuario_id' => $this->session->get('usuarioId'),
+        'activo' => 1
+    ];
+    $idVenta = $this->ventasModel->insert($datos);
+    ```
+  </Step>
+
+  <Step title="Guarda detalles de productos">
+    Cada línea del carrito se guarda en `detalle_ventas`:
+    ```php
+    $producto = [
+        'venta_id'    => $idVenta,
+        'producto_id' => $productoTmp['id_producto'],
+        'nombre'      => $productoTmp['nombre'],
+        'cantidad'    => $productoTmp['cantidad'],
+        'precio'      => $productoTmp['precio'],
+    ];
+    $detalleVentasModel->insert($producto);
+    ```
+  </Step>
+
+  <Step title="Actualiza inventario">
+    Para cada producto inventariable:
+    ```php
+    if ($datosProducto['inventariable'] == 1) {
+        $productosModel->actualizaStock($idProducto, $cantidad, '-');
+    }
+    ```
+  </Step>
+
+  <Step title="Limpia carrito temporal">
+    ```php
+    $temporalModel->eliminaVenta($idVentaTmp);
+    ```
+  </Step>
+
+  <Step title="Genera ticket PDF">
+    Redirige a `/ventas/muestraTicket/{id}` que muestra el ticket generado
+  </Step>
+</Steps>
+
+## Historial de Ventas
+
+### Ver Ventas Activas
+
+Accede a **Ventas** desde el menú para ver todas las transacciones completadas.
+
+El listado muestra:
+- Folio de la venta
+- Fecha y hora
+- Total
+- Acciones disponibles
+
+```php
+// app/Controllers/Ventas.php
+public function index()
+{
+    $ventas = $this->ventasModel->mostrarVentas(1);  // 1 = activas
+    return view('ventas/index', ['ventas' => $ventas]);
+}
+```
+
+### Reimprimir Ticket
+
+<Steps>
+  <Step title="Seleccionar venta">
+    En el historial, haz clic en el ícono de ticket de la venta deseada
+  </Step>
+
+  <Step title="Ver ticket">
+    El sistema muestra una vista previa del ticket
+  </Step>
+
+  <Step title="Descargar o imprimir">
+    El PDF puede descargarse o enviarse directamente a la impresora
+  </Step>
+</Steps>
+
+<Tip>
+  Útil para clientes que extraviaron su ticket o necesitan un duplicado.
+</Tip>
+
+### Cancelar Venta
+
+<Warning>
+  Cancelar una venta es una acción importante que debe hacerse solo cuando sea necesario (venta incorrecta, devolución completa, etc.)
+</Warning>
+
+<Steps>
+  <Step title="Seleccionar venta a cancelar">
+    En el historial, haz clic en el ícono de cancelar (X rojo)
+  </Step>
+
+  <Step title="Confirmar acción">
+    El sistema solicitará confirmación
+  </Step>
+
+  <Step title="Procesamiento">
+    Al confirmar, el sistema:
+    - Marca la venta como inactiva (`activo = 0`)
+    - **Restaura el inventario** de productos inventariables
+    - Mantiene el registro para auditoría
+
+    ```php
+    public function cancelar($id)
+    {
+        $this->ventasModel->update($id, ['activo' => 0]);
+        
+        // Restaurar inventario
+        foreach ($detalleVenta as $producto) {
+            if ($datosProducto['inventariable'] == 1) {
+                $productosModel->actualizaStock($productoId, $cantidad, '+');
+            }
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Las ventas canceladas se mueven a "Ventas Canceladas" pero no se eliminan de la base de datos. Esto permite mantener trazabilidad completa.
+</Note>
+
+### Ver Ventas Canceladas
+
+Accede a **Ventas → Ventas Canceladas** o `/ventas/bajas` para ver el historial de ventas canceladas.
+
+Los tickets de ventas canceladas muestran una marca de agua roja "Venta cancelada".
+
+## Generación de Tickets
+
+Los tickets se generan automáticamente en formato PDF usando FPDF.
+
+### Contenido del Ticket
+
+- **Encabezado:**
+  - Nombre de la tienda
+  - Dirección
+  - Teléfono
+  
+- **Información de venta:**
+  - Número de ticket (folio)
+  - Fecha y hora
+  
+- **Detalles de productos:**
+  - Cantidad
+  - Descripción
+  - Precio unitario
+  - Importe
+
+- **Total:**
+  - Total en números
+  - Total en letras
+
+- **Pie:**
+  - Leyenda personalizable (ej: "Gracias por su compra")
+
+### Personalización
+
+Los datos del ticket se configuran en **Configuración del Sistema**:
+
+```php
+$configuracionArray = [
+    'tienda_nombre' => 'Mi Tienda',
+    'tienda_direccion' => 'Calle Principal 123',
+    'tienda_telefono' => '555-1234',
+    'ticket_leyenda' => 'Gracias por su compra'
+];
+```
+
+<Card
+  title="Personalizar Tickets"
+  icon="receipt"
+  href="/guides/ticket-generation"
+>
+  Aprende a personalizar el diseño y contenido de los tickets
+</Card>
+
+## Tabla Temporal de Caja
+
+El sistema usa una tabla temporal (`temporal_caja`) para almacenar productos antes de completar la venta:
+
+| Campo | Descripción |
+|-------|-------------|
+| `id_venta` | ID temporal único por sesión |
+| `id_producto` | Producto agregado |
+| `codigo` | Código del producto |
+| `nombre` | Nombre del producto |
+| `precio` | Precio al momento de agregar |
+| `cantidad` | Unidades |
+| `importe` | Precio × cantidad |
+
+<Info>
+  Esta tabla permite:
+  - Múltiples ventas simultáneas (diferentes IDs temporales)
+  - Cancelar una venta en progreso sin afectar la base de datos
+  - Recuperarse de errores sin pérdida de datos
+</Info>
+
+## Mejores Prácticas
+
+<Accordion title="Verifica el total antes de cobrar">
+  Revisa siempre que los productos y cantidades sean correctos antes de finalizar la venta.
+</Accordion>
+
+<Accordion title="Guarda los tickets">
+  Aunque se puede reimprimir, es recomendable guardar copias de los tickets para auditorías.
+</Accordion>
+
+<Accordion title="Cancela ventas solo cuando sea necesario">
+  Las ventas canceladas afectan reportes y estadísticas. Úsalo solo para errores genuinos.
+</Accordion>
+
+<Accordion title="Cierra el día con un reporte">
+  Al final del día, genera un reporte de ventas para verificar los ingresos.
+</Accordion>
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Gestión de Productos"
+    icon="box"
+    href="/features/products"
+  >
+    Administra tu catálogo
+  </Card>
+  <Card
+    title="Reportes de Ventas"
+    icon="chart-line"
+    href="/features/reports"
+  >
+    Analiza tus ventas
+  </Card>
+  <Card
+    title="Generación de Tickets"
+    icon="file-pdf"
+    href="/guides/ticket-generation"
+  >
+    Personaliza tus tickets
+  </Card>
+</CardGroup>

@@ -1,0 +1,303 @@
+---
+title: Reportes
+description: Genera reportes de ventas y productos en formato PDF
+---
+
+## Sistema de Reportes
+
+POS CDP Lite incluye dos tipos de reportes en formato PDF para analizar tu negocio:
+
+<CardGroup cols={2}>
+  <Card title="Reporte de Ventas" icon="chart-line">
+    Ventas por rango de fechas con totales
+  </Card>
+  <Card title="Reporte de Productos" icon="box">
+    Inventario actual con precios
+  </Card>
+</CardGroup>
+
+## Reporte de Ventas
+
+### Generar Reporte
+
+<Steps>
+  <Step title="Acceder al formulario">
+    Ve a **Reportes → Reporte de Ventas** o accede a `/reportes/crea_ventas`
+  </Step>
+
+  <Step title="Seleccionar rango de fechas">
+    El formulario solicita:
+    - **Fecha de inicio:** Primera fecha a incluir
+    - **Fecha fin:** Última fecha a incluir
+    - **Estado:** Activas, Canceladas o Todas
+
+    ```php
+    $reglas = [
+        'fecha_inicio' => ['label' => 'fecha de inicio', 'rules' => 'required'],
+        'fecha_fin'    => ['label' => 'fecha de fin', 'rules' => 'required'],
+    ];
+    ```
+  </Step>
+
+  <Step title="Generar PDF">
+    El sistema consulta las ventas y genera un PDF con:
+    - Logotipo de la tienda (si existe)
+    - Rango de fechas del reporte
+    - Lista de todas las ventas
+    - Total general
+    - Número de transacciones
+  </Step>
+</Steps>
+
+### Contenido del Reporte
+
+El PDF incluye:
+
+| Columna | Descripción |
+|---------|-------------|
+| Fecha | Fecha y hora de la venta |
+| Folio | Número de ticket |
+| Total | Importe de la venta |
+
+**Resumen al final:**
+- **Total:** Suma de todas las ventas del período
+- **Número de ventas:** Cantidad de transacciones
+
+```php
+// app/Controllers/Reportes.php
+public function generaVentas($inicio, $fin, $estatus)
+{
+    $ventasModel = new VentasModel();
+    $ventas = $ventasModel->ventasRango($inicio, $fin, $estatus);
+    
+    $total = 0;
+    $numVentas = 0;
+    
+    foreach ($ventas as $venta) {
+        $total += $venta['total'];
+        $numVentas++;
+    }
+    
+    // Generar PDF...
+}
+```
+
+### Filtrar por Estado
+
+Puedes filtrar las ventas a incluir:
+
+- **Activas (1):** Solo ventas vigentes
+- **Canceladas (0):** Solo ventas canceladas
+- **Todas (2):** Todas las ventas del período
+
+<Tip>
+  Generar reportes con ventas canceladas por separado ayuda a identificar patrones de errores o devoluciones.
+</Tip>
+
+## Reporte de Productos
+
+### Generar Reporte
+
+<Steps>
+  <Step title="Acceder">
+    Ve a **Reportes → Reporte de Productos** o `/reportes/productos`
+  </Step>
+
+  <Step title="Ver reporte">
+    No requiere configuración adicional. Se genera inmediatamente con:
+    - Todos los productos activos
+    - Información completa de inventario
+    - Estado actual de existencias
+  </Step>
+</Steps>
+
+### Contenido del Reporte
+
+| Columna | Descripción |
+|---------|-------------|
+| Código | Código del producto |
+| Nombre | Nombre completo |
+| Precio | Precio de venta actual |
+| Inventariable | 1 = Sí, 0 = No |
+| Existencias | Cantidad en stock |
+
+**Resumen:**
+- **Número de productos:** Total de productos activos
+
+```php
+public function generaProductos()
+{
+    $productosModel = new ProductosModel();
+    $productos = $productosModel->productosInventario();
+    
+    $numProductos = 0;
+    
+    foreach ($productos as $producto) {
+        // Agregar al PDF
+        $numProductos++;
+    }
+}
+```
+
+<Note>
+  Este reporte muestra solo productos activos. Los productos eliminados no aparecen.
+</Note>
+
+## Formato de los PDFs
+
+Todos los reportes se generan usando **PlantillaVentas** y **PlantillaProductos** que extienden FPDF.
+
+### Características
+
+- **Tamaño:** Carta (letter)
+- **Orientación:** Vertical (Portrait)
+- **Encabezado:** Logo y título del reporte
+- **Tabla:** Datos organizados en columnas
+- **Pie:** Número de página
+
+### Personalización
+
+Los reportes usan el logotipo configurado en `public/images/logotipo.png`:
+
+```php
+$logo = base_url('images/logotipo.png');
+
+$datos = [
+    'titulo' => 'Reporte de ventas',
+    'logo' => $logo,
+    'inicio' => $this->ordenarFecha($inicio),
+    'fin' => $this->ordenarFecha($fin)
+];
+
+$pdf = new PlantillaVentas('P', 'mm', 'letter', $datos);
+```
+
+<Tip>
+  Reemplaza `public/images/logotipo.png` con tu propio logo para personalizar los reportes.
+</Tip>
+
+## Casos de Uso
+
+### Cierre de Caja
+
+Genera un reporte de ventas del día para verificar ingresos:
+- **Fecha inicio:** Hoy (ej: 2024-01-15)
+- **Fecha fin:** Hoy (ej: 2024-01-15)
+- **Estado:** Activas
+
+### Análisis Mensual
+
+Revisa el desempeño del mes:
+- **Fecha inicio:** Primer día del mes
+- **Fecha fin:** Último día del mes
+- **Estado:** Activas
+
+Compara con meses anteriores para identificar tendencias.
+
+### Auditoría de Inventario
+
+Genera el reporte de productos para:
+- Comparar contra inventario físico
+- Identificar productos con bajo stock
+- Planificar reabastecimiento
+
+### Identificar Errores
+
+Genera reporte de ventas canceladas para:
+- Identificar productos problemáticos
+- Detectar errores de captura frecuentes
+- Mejorar procesos de venta
+
+## Limitaciones Actuales
+
+- No hay gráficas o visualizaciones
+- Los reportes son estáticos (no interactivos)
+- No se pueden exportar a Excel o CSV
+- No hay filtros avanzados (por producto, por usuario, etc.)
+- No hay comparaciones entre períodos
+- No hay reportes de rentabilidad o márgenes
+
+<Info>
+  **POS CDP Pro** incluye:
+  - Reportes con gráficas
+  - Exportación a múltiples formatos
+  - Reportes personalizables
+  - Dashboard con métricas en tiempo real
+  - Análisis de rentabilidad
+</Info>
+
+## Mejores Prácticas
+
+<Accordion title="Genera reportes diarios">
+  Al final de cada día, genera un reporte de ventas para:
+  - Verificar ingresos contra efectivo en caja
+  - Detectar discrepancias temprano
+  - Mantener registros organizados
+</Accordion>
+
+<Accordion title="Usa reportes de inventario regularmente">
+  Genera el reporte de productos al menos semanalmente para:
+  - Identificar productos con bajo stock
+  - Planificar compras
+  - Detectar productos obsoletos
+</Accordion>
+
+<Accordion title="Archiva los PDFs">
+  Guarda copias de los reportes para:
+  - Auditorías fiscales
+  - Análisis histórico
+  - Respaldo legal
+</Accordion>
+
+<Accordion title="Compara períodos similares">
+  Al analizar ventas, compara:
+  - Semana actual vs semana anterior
+  - Mes actual vs mismo mes año anterior
+  - Esto revela tendencias estacionales
+</Accordion>
+
+## Solución de Problemas
+
+<Accordion title="El PDF no se genera">
+  - Verifica que la extensión PHP GD esté instalada
+  - Confirma permisos de escritura en carpetas temporales
+  - Revisa los logs de error de PHP
+</Accordion>
+
+<Accordion title="No aparece el logo">
+  - Verifica que el archivo exista en `public/images/logotipo.png`
+  - Confirma que el archivo sea PNG
+  - Asegúrate de que el tamaño sea apropiado (máx 200x100px)
+</Accordion>
+
+<Accordion title="Faltan ventas en el reporte">
+  - Verifica el rango de fechas
+  - Confirma el filtro de estado (activas/canceladas/todas)
+  - Revisa que las ventas existan en la base de datos
+</Accordion>
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Ventas"
+    icon="cash-register"
+    href="/features/sales"
+  >
+    Sistema de ventas y caja
+  </Card>
+  <Card
+    title="Productos"
+    icon="box"
+    href="/features/products"
+  >
+    Gestión de inventario
+  </Card>
+  <Card
+    title="Tickets PDF"
+    icon="file-pdf"
+    href="/guides/ticket-generation"
+  >
+    Personalización de documentos
+  </Card>
+</CardGroup>

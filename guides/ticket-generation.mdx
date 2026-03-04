@@ -1,0 +1,82 @@
+---
+title: Generación de Tickets
+description: Cómo funciona y cómo personalizar los tickets PDF
+---
+
+## Sistema de Tickets
+
+Los tickets se generan automáticamente en formato PDF usando la biblioteca FPDF.
+
+## Proceso de Generación
+
+<Steps>
+  <Step title="Al completar venta">
+    El sistema redirige a `/ventas/muestraTicket/{id}`
+  </Step>
+
+  <Step title="Generar PDF">
+    El método `generaTicket()` crea el documento:
+
+    ```php
+    $pdf = new Fpdf('P', 'mm', array(80, 250));
+    $pdf->AddPage();
+    $pdf->SetMargins(5, 5, 5);
+    ```
+
+    - Tamaño: 80mm x 250mm (rollo de ticket)
+    - Orientación: Portrait (vertical)
+    - Márgenes: 5mm
+  </Step>
+
+  <Step title="Contenido">
+    Se agrega información en este orden:
+    1. Nombre de tienda
+    2. Dirección y teléfono
+    3. Número de ticket
+    4. Tabla de productos
+    5. Total
+    6. Total en letras
+    7. Fecha y hora
+    8. Leyenda personalizada
+  </Step>
+</Steps>
+
+## Personalización
+
+### Datos de la Tienda
+
+Configura en **Configuración del Sistema**:
+- Nombre de tienda
+- Dirección
+- Teléfono
+- Leyenda del ticket
+
+<Card
+  title="Configuración"
+  icon="gear"
+  href="/features/configuration"
+>
+  Personaliza los datos del sistema
+</Card>
+
+### Logotipo
+
+Reemplaza `public/images/logotipo.png` con tu logo (opcional).
+
+### Modificar Diseño
+
+El código de generación está en:
+```
+app/Controllers/Ventas.php → generaTicket()
+```
+
+Puedes modificar:
+- Tamaño de letra
+- Colores
+- Espaciado
+- Formato de números
+- Agregar campos adicionales
+
+<Tip>
+  Consulta la documentación de FPDF en http://www.fpdf.org para opciones avanzadas de personalización.
+</Tip>

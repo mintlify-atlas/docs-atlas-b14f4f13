@@ -1,0 +1,254 @@
+---
+title: Arquitectura del Sistema
+description: Estructura MVC y organización del código en POS CDP Lite
+---
+
+## Arquitectura General
+
+POS CDP Lite está construido sobre **CodeIgniter 4**, un framework PHP que implementa el patrón **Modelo-Vista-Controlador (MVC)**.
+
+## Estructura de Directorios
+
+```
+pos-cdp-lite/
+├── app/                    # Código de la aplicación
+│   ├── Config/            # Archivos de configuración
+│   ├── Controllers/       # Controladores (lógica de negocio)
+│   ├── Models/            # Modelos (acceso a datos)
+│   ├── Views/             # Vistas (presentación)
+│   ├── Database/          # Migraciones y seeders
+│   ├── Filters/           # Filtros HTTP (autenticación, etc.)
+│   ├── Helpers/           # Funciones auxiliares
+│   ├── Libraries/         # Bibliotecas personalizadas
+│   └── ThirdParty/        # Bibliotecas de terceros (FPDF)
+├── public/                # Punto de entrada web
+│   ├── index.php          # Front controller
+│   ├── css/               # Estilos
+│   ├── js/                # JavaScript
+│   └── images/            # Imágenes y recursos
+├── system/                # Framework CodeIgniter 4
+├── writable/              # Archivos generados (logs, cache, session)
+├── tests/                 # Pruebas unitarias
+├── env                    # Plantilla de configuración
+└── spark                  # CLI de CodeIgniter
+```
+
+## Patrón MVC
+
+### Modelo (Model)
+
+Maneja la lógica de datos y comunicación con la base de datos.
+
+**Ubicación:** `app/Models/`
+
+Ejemplos:
+- `ProductosModel.php` - CRUD de productos
+- `VentasModel.php` - Gestión de ventas
+- `UsuariosModel.php` - Autenticación
+
+<Card
+  title="Modelos"
+  icon="database"
+  href="/development/models"
+>
+  Documentación detallada de modelos
+</Card>
+
+### Vista (View)
+
+Maneja la presentación y la interfaz de usuario.
+
+**Ubicación:** `app/Views/`
+
+Organización:
+- `login.php` - Formulario de login
+- `productos/` - Vistas de productos
+- `ventas/` - Vistas de ventas
+- `reportes/` - Vistas de reportes
+
+<Card
+  title="Vistas"
+  icon="window"
+  href="/development/views"
+>
+  Estructura de las vistas
+</Card>
+
+### Controlador (Controller)
+
+Maneja la lógica de negocio y coordina Modelos y Vistas.
+
+**Ubicación:** `app/Controllers/`
+
+Principales:
+- `Login.php` - Autenticación
+- `Productos.php` - Gestión de productos
+- `Caja.php` - Interfaz POS
+- `Ventas.php` - Proceso de ventas
+- `Reportes.php` - Generación de reportes
+
+<Card
+  title="Controladores"
+  icon="code"
+  href="/development/controllers"
+>
+  Documentación de controladores
+</Card>
+
+## Flujo de Request
+
+1. **Cliente** hace petición HTTP
+2. **public/index.php** (Front Controller) recibe la petición
+3. **Router** determina qué controlador y método ejecutar
+4. **Filters** (opcional) interceptan la petición (ej: autenticación)
+5. **Controller** procesa la lógica de negocio
+6. **Model** (si es necesario) accede a la base de datos
+7. **View** renderiza la respuesta HTML
+8. **Response** se envía al cliente
+
+## Sistema de Rutas
+
+Las rutas se definen en `app/Config/Routes.php`:
+
+```php
+// Rutas públicas
+$routes->get('/', 'Login::index');
+$routes->post('login', 'Login::login');
+
+// Rutas protegidas
+$routes->get('inicio', 'Inicio::index', ["filter" => "auth"]);
+$routes->resource('productos', ['filter' => 'auth']);
+$routes->get('caja', 'Caja::index', ["filter" => "auth"]);
+```
+
+### Tipos de Rutas
+
+- **GET:** Mostrar formularios y páginas
+- **POST:** Procesar formularios
+- **PUT:** Actualizar recursos
+- **DELETE:** Eliminar recursos
+- **Resource:** CRUD completo automático
+
+## Filtros
+
+Los filtros interceptan peticiones antes/después de procesarlas.
+
+**Filtro de Autenticación (`auth`):**
+
+Verifica que el usuario haya iniciado sesión:
+
+```php
+// app/Filters/Auth.php
+if (!$session->get('usuarioLogin')) {
+    return redirect()->to(base_url());
+}
+```
+
+Aplicado en rutas:
+
+```php
+$routes->get('productos', 'Productos::index', ["filter" => "auth"]);
+```
+
+## Base de Datos
+
+### ORM de CodeIgniter
+
+Usa Query Builder para consultas seguras:
+
+```php
+// Búsqueda simple
+$productos = $this->productosModel->where('activo', 1)->findAll();
+
+// Con condiciones
+$producto = $this->productosModel
+    ->where(['codigo' => $codigo, 'activo' => 1])
+    ->first();
+
+// Actualización
+$this->productosModel->update($id, ['precio' => 100.00]);
+```
+
+### Migraciones
+
+Versionado de base de datos en `app/Database/Migrations/`:
+
+- `2024-01-30-144522_Usuarios.php`
+- `2024-01-30-152739_Productos.php`
+- `2024-02-06-204639_Ventas.php`
+
+## Bibliotecas de Terceros
+
+### FPDF
+
+Generación de PDFs para tickets y reportes.
+
+**Ubicación:** `app/ThirdParty/Fpdf/`
+
+Clases personalizadas:
+- `PlantillaVentas.php` - Reportes de ventas
+- `PlantillaProductos.php` - Reportes de productos
+
+### NumerosALetras
+
+Convierte números a texto (para tickets):
+
+```php
+NumerosALetras::convertir($total, 'pesos', 'centavos')
+// "CIENTO CINCUENTA PESOS CON 00/100 CENTAVOS"
+```
+
+## Principios de Diseño
+
+### Separación de Responsabilidades
+
+- **Controladores:** Lógica de negocio, validación
+- **Modelos:** Acceso y manipulación de datos
+- **Vistas:** Solo presentación, sin lógica
+
+### DRY (Don't Repeat Yourself)
+
+- Funciones comunes en `app/Common.php`
+- Helpers reutilizables
+- Componentes de vista compartidos
+
+### Seguridad
+
+- Validación de entrada con reglas
+- Escapado de salida con `esc()`
+- Prepared statements automáticos
+- Protección CSRF habilitada
+- Filtros de autenticación
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Modelos"
+    icon="database"
+    href="/development/models"
+  >
+    Documentación de modelos
+  </Card>
+  <Card
+    title="Controladores"
+    icon="code"
+    href="/development/controllers"
+  >
+    Documentación de controladores
+  </Card>
+  <Card
+    title="Vistas"
+    icon="window"
+    href="/development/views"
+  >
+    Sistema de templates
+  </Card>
+  <Card
+    title="CodeIgniter 4 Docs"
+    icon="book"
+    href="https://codeigniter.com/user_guide/"
+  >
+    Documentación oficial del framework
+  </Card>
+</CardGroup>

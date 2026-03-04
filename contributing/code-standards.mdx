@@ -1,0 +1,73 @@
+---
+title: Estándares de Código
+description: Convenciones y mejores prácticas de programación
+---
+
+## CodeIgniter 4 Style Guide
+
+POS CDP Lite sigue las convenciones de CodeIgniter 4.
+
+## Convenciones PHP
+
+### PSR-12
+
+El código sigue PSR-12:
+
+- Indentación con 4 espacios
+- Llaves en nueva línea para clases y métodos
+- CamelCase para nombres de clases
+- camelCase para nombres de métodos
+
+```php
+class ProductosModel extends Model
+{
+    public function buscarProducto($codigo)
+    {
+        return $this->where('codigo', $codigo)->first();
+    }
+}
+```
+
+### Nombres de Archivos
+
+- Controladores: `PascalCase.php`
+- Modelos: `PascalCaseModel.php`
+- Vistas: `snake_case.php`
+
+## Documentación
+
+Documenta clases y métodos complejos:
+
+```php
+/**
+ * Actualiza el stock de un producto
+ *
+ * @param int $id ID del producto
+ * @param int $cantidad Cantidad a sumar/restar
+ * @param string $operador '+' o '-'
+ * @return void
+ */
+public function actualizaStock($id, $cantidad, $operador)
+{
+    // ...
+}
+```
+
+## Seguridad
+
+- Usa validación para toda entrada de usuario
+- Escapa salida con `esc()`
+- Usa Query Builder, nunca queries raw
+- Valida y sanitiza datos
+
+## Testing
+
+Agrega tests para nuevas funcionalidades cuando sea posible.
+
+<Card
+  title="Arquitectura"
+  icon="diagram-project"
+  href="/development/architecture"
+>
+  Entiende la estructura del código
+</Card>

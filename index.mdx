@@ -1,97 +1,254 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: POS CDP Lite
+description: Sistema de Punto de Venta open-source para gestionar ventas, inventario y reportes en tiendas
+mode: custom
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#176f9d] via-[#1a7ba8] to-[#0d5a7a] dark:from-[#0f1117] dark:via-[#176f9d] dark:to-[#0d5a7a] py-20">
+  <div className="max-w-6xl mx-auto px-6 relative z-10">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          Sistema de Punto de Venta CDP Lite
+        </h1>
+        <p className="text-lg sm:text-xl text-white/90 mb-8 max-w-2xl">
+          Aplicación web open-source basada en PHP y MySQL para gestionar ventas, productos, inventario y reportes en tu tienda con CodeIgniter 4.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="/quickstart"
+            className="inline-flex items-center px-6 py-3 bg-white text-[#176f9d] font-semibold rounded-lg hover:bg-gray-100 transition-colors no-underline"
+          >
+            Comenzar Ahora
+            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </a>
+          <a
+            href="/installation"
+            className="inline-flex items-center px-6 py-3 border border-white/30 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors no-underline"
+          >
+            Ver Instalación
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Comienza Rápidamente
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Instala y configura tu sistema POS en minutos
+  </p>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+  <Steps>
+    <Step title="Instalar el sistema">
+      Descarga POS CDP Lite usando Composer o Git:
 
-## Make it yours
+      ```bash Composer
+      composer create-project mroblesdev/pos-cdp-lite
+      ```
 
-Design a docs site that looks great and empowers your users.
+      ```bash Git
+      git clone https://github.com/mroblesdev/pos-cdp-lite.git
+      ```
+    </Step>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
+    <Step title="Configurar la base de datos">
+      Crea una base de datos MySQL y configura tu archivo `.env`:
+
+      ```sql
+      CREATE DATABASE IF NOT EXISTS `pos-cdp-lite` 
+      DEFAULT CHARACTER SET utf8mb4 
+      COLLATE utf8mb4_unicode_ci;
+      ```
+
+      ```bash .env
+      database.default.hostname = localhost
+      database.default.database = pos-cdp-lite
+      database.default.username = root
+      database.default.password = password
+      ```
+    </Step>
+
+    <Step title="Ejecutar migraciones">
+      Ejecuta las migraciones y seeders para crear las tablas e insertar datos iniciales:
+
+      ```bash
+      php spark migrate
+      php spark db:seed CargaSeeder
+      ```
+    </Step>
+
+    <Step title="Iniciar el sistema">
+      Inicia el servidor de desarrollo:
+
+      ```bash
+      php spark serve
+      ```
+
+      Accede al sistema en `http://localhost:8080` con las credenciales por defecto:
+      - **Usuario:** admin
+      - **Contraseña:** admin
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Funcionalidades Principales
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Todo lo que necesitas para gestionar tu punto de venta
+  </p>
+
+  <CardGroup cols={3}>
     <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+      title="Gestión de Productos"
+      icon="box"
+      href="/features/products"
+    >
+      Catálogo completo con inventario, precios y control de existencias
+    </Card>
+    <Card
+      title="Caja de Cobro"
+      icon="cash-register"
+      href="/features/sales"
+    >
+      Interfaz POS intuitiva para procesar ventas rápidamente
+    </Card>
+    <Card
+      title="Tickets de Venta"
+      icon="receipt"
+      href="/guides/ticket-generation"
+    >
+      Genera e imprime tickets PDF automáticamente
+    </Card>
+    <Card
+      title="Historial de Ventas"
+      icon="clock-rotate-left"
+      href="/features/sales"
+    >
+      Consulta, reimprime y cancela ventas anteriores
+    </Card>
+    <Card
+      title="Reportes"
+      icon="chart-line"
+      href="/features/reports"
+    >
+      Reportes de ventas por fecha y productos en inventario
+    </Card>
+    <Card
+      title="Configuración"
+      icon="gear"
+      href="/features/configuration"
+    >
+      Personaliza datos de tu tienda y tickets de venta
+    </Card>
+  </CardGroup>
+</div>
 
-## Create beautiful pages
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Explora por Tema
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Aprende a usar todas las características del sistema
+  </p>
 
-Everything you need to create world-class documentation.
+  <CardGroup cols={2}>
+    <Card
+      title="Autenticación"
+      icon="lock"
+      href="/features/authentication"
+    >
+      Sistema de inicio de sesión y gestión de contraseñas
+    </Card>
+    <Card
+      title="Configuración del Entorno"
+      icon="file-code"
+      href="/guides/environment-config"
+    >
+      Configura variables de entorno y conexión a base de datos
+    </Card>
+    <Card
+      title="Arquitectura del Sistema"
+      icon="diagram-project"
+      href="/development/architecture"
+    >
+      Estructura MVC con CodeIgniter 4
+    </Card>
+    <Card
+      title="Contribuir al Proyecto"
+      icon="code-pull-request"
+      href="/contributing/getting-started"
+    >
+      Guía para contribuir mejoras y correcciones
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Recursos Adicionales
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Encuentra ayuda y más información
+  </p>
 
-## Need inspiration?
+  <CardGroup cols={2}>
+    <Card
+      title="Demostración en Vivo"
+      icon="window"
+      href="https://pos-lite.sistemarv.com"
+    >
+      Prueba el sistema sin instalarlo
+    </Card>
+    <Card
+      title="Repositorio GitHub"
+      icon="github"
+      href="https://github.com/mroblesdev/pos-cdp-lite"
+    >
+      Código fuente y issues
+    </Card>
+    <Card
+      title="POS CDP Pro"
+      icon="star"
+      href="https://codigosdeprogramacion.com/2021/09/02/sistema-de-punto-de-venta-cdp-3"
+    >
+      Versión completa con más funcionalidades
+    </Card>
+    <Card
+      title="Licencia MIT"
+      icon="scale-balanced"
+      href="https://github.com/mroblesdev/pos-cdp-lite/blob/main/LICENSE"
+    >
+      Open source y libre para uso comercial
+    </Card>
+  </CardGroup>
+</div>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="relative overflow-hidden rounded-2xl border dark:border-[#27272a] border-gray-200 bg-white dark:bg-[#1a1d27] p-8 sm:p-12">
+    <div className="text-center">
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        ¿Listo para comenzar?
+      </h2>
+      <p className="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+        Instala POS CDP Lite en tu servidor y comienza a gestionar las ventas de tu tienda hoy mismo.
+      </p>
+      <a
+        href="/installation"
+        className="inline-flex items-center px-6 py-3 bg-[#176f9d] text-white font-semibold rounded-lg hover:bg-[#125c82] transition-colors no-underline"
+      >
+        Ver Guía de Instalación
+        <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

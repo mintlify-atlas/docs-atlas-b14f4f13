@@ -1,0 +1,63 @@
+---
+title: Ejecutar Migraciones
+description: Crear tablas e insertar datos iniciales
+---
+
+## Migraciones de Base de Datos
+
+Las migraciones permiten crear y modificar la estructura de la base de datos de forma controlada.
+
+## Opción 1: Usar Migraciones (Recomendado)
+
+<Steps>
+  <Step title="Ejecutar migraciones">
+    ```bash
+    php spark migrate
+    ```
+
+    Esto crea todas las tablas necesarias:
+    - usuarios
+    - productos
+    - ventas
+    - detalle_ventas
+    - temporal_caja
+    - configuracion
+  </Step>
+
+  <Step title="Cargar datos iniciales">
+    ```bash
+    php spark db:seed CargaSeeder
+    ```
+
+    Inserta:
+    - Usuario administrador (admin/admin)
+    - Configuración inicial del sistema
+    - Datos de ejemplo (opcional)
+  </Step>
+
+  <Step title="Verificar">
+    ```bash
+    php spark migrate:status
+    ```
+  </Step>
+</Steps>
+
+## Opción 2: Importar SQL
+
+Para producción o instalación rápida:
+
+```bash
+mysql -u root -p pos-cdp-lite < app/Database/pos-cdp-lite.sql
+```
+
+<Note>
+  El archivo SQL incluye tanto la estructura como los datos iniciales.
+</Note>
+
+<Card
+  title="Inicio Rápido"
+  icon="rocket"
+  href="/quickstart"
+>
+  Guía completa de instalación
+</Card>

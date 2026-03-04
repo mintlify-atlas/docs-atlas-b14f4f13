@@ -1,0 +1,62 @@
+---
+title: Vistas
+description: Capa de presentación y templates HTML
+---
+
+## Sistema de Vistas
+
+Las vistas manejan toda la presentación HTML del sistema.
+
+## Organización
+
+```
+app/Views/
+├── login.php              # Página de login
+├── inicio.php             # Dashboard
+├── cambia_password.php    # Cambio de contraseña
+├── productos/
+│   ├── index.php          # Lista de productos
+│   ├── new.php            # Crear producto
+│   ├── edit.php           # Editar producto
+│   └── eliminados.php     # Productos eliminados
+├── ventas/
+│   ├── caja.php           # Interfaz POS
+│   ├── index.php          # Historial de ventas
+│   ├── ticket.php         # Vista previa ticket
+│   └── eliminados.php     # Ventas canceladas
+└── reportes/
+    ├── crea_ventas.php    # Formulario reporte ventas
+    └── productos.php      # Reporte productos
+```
+
+## Tecnologías Frontend
+
+- **HTML5/CSS3**
+- **Bootstrap 4** - Framework CSS
+- **jQuery** - Manipulación DOM
+- **jQuery UI** - Autocompletado
+- **Font Awesome** - Iconos
+
+## Patrón de Vistas
+
+La mayoría de vistas siguen esta estructura:
+
+1. **Header** - Navegación y menú
+2. **Content** - Contenido principal
+3. **Footer** - Scripts y cierre
+
+## Interacción AJAX
+
+Varias funcionalidades usan AJAX:
+
+- **Caja:** Agregar/quitar productos
+- **Productos:** Autocompletado de búsqueda
+- **Validaciones:** Verificación en tiempo real
+
+<Card
+  title="Arquitectura"
+  icon="diagram-project"
+  href="/development/architecture"
+>
+  Estructura MVC completa
+</Card>

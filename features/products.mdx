@@ -1,0 +1,339 @@
+---
+title: Gestión de Productos
+description: Catálogo de productos, inventario y control de existencias
+---
+
+## Gestión de Productos
+
+El módulo de productos permite administrar el catálogo completo de artículos disponibles para venta, incluyendo control de inventario y precios.
+
+## Catálogo de Productos
+
+### Ver Productos Activos
+
+Accede al listado completo de productos desde el menú **Productos**. La vista muestra:
+
+- Código del producto
+- Nombre
+- Precio de venta
+- Si es inventariable
+- Existencias actuales
+- Acciones disponibles (Editar, Eliminar)
+
+```php
+// Ruta en app/Controllers/Productos.php
+public function index()
+{
+    $productos = $this->productosModel->where('activo', 1)->findAll();
+    return view('productos/index', ['productos' => $productos]);
+}
+```
+
+## Crear Producto
+
+<Steps>
+  <Step title="Acceder al formulario">
+    Desde el listado de productos, haz clic en **Nuevo Producto**
+  </Step>
+
+  <Step title="Completar información">
+    Llena el formulario con los siguientes campos:
+
+    <ParamField path="codigo" type="string" required>
+      Código único del producto (ej: "001", "PROD-123")
+    </ParamField>
+
+    <ParamField path="nombre" type="string" required>
+      Nombre descriptivo del producto
+    </ParamField>
+
+    <ParamField path="precio" type="decimal" required>
+      Precio de venta (debe ser mayor a 0)
+    </ParamField>
+
+    <ParamField path="inventariable" type="boolean" default="1">
+      Si el producto controla inventario:
+      - `1` (Sí): Se deducirá del stock al vender
+      - `0` (No): No afecta existencias (ideal para servicios)
+    </ParamField>
+
+    <ParamField path="existencia" type="integer" default="0">
+      Cantidad inicial en inventario (solo si es inventariable)
+    </ParamField>
+  </Step>
+
+  <Step title="Validación">
+    El sistema valida:
+
+    ```php
+    $reglas = [
+        'codigo' => ['label' => 'código', 'rules' => 'required|is_unique[productos.codigo]'],
+        'nombre' => 'required',
+        'precio' => 'required|greater_than[0]',
+        'existencia' => 'numeric|greater_than_equal_to[0]'
+    ];
+    ```
+
+    <Warning>
+      El código debe ser único. Si intentas usar un código existente, se mostrará un error.
+    </Warning>
+  </Step>
+
+  <Step title="Guardar">
+    Al guardar, el producto queda disponible inmediatamente para ventas.
+  </Step>
+</Steps>
+
+## Editar Producto
+
+<Steps>
+  <Step title="Seleccionar producto">
+    En el listado, haz clic en el ícono de editar (lápiz) del producto deseado
+  </Step>
+
+  <Step title="Modificar datos">
+    Actualiza los campos necesarios. La validación del código permite mantener el mismo:
+
+    ```php
+    'codigo' => ['label' => 'código', 
+                 'rules' => "required|is_unique[productos.codigo,id,{$id}]"]
+    ```
+  </Step>
+
+  <Step title="Guardar cambios">
+    Los cambios se aplican inmediatamente. Las ventas futuras usarán el nuevo precio.
+  </Step>
+</Steps>
+
+<Note>
+  Modificar el precio de un producto **no** afecta ventas anteriores, que mantienen el precio histórico.
+</Note>
+
+## Eliminar Producto
+
+POS CDP Lite usa **eliminación lógica** (soft delete):
+
+```php
+public function delete($id = null)
+{
+    if ($id !== null) {
+        $this->productosModel->update($id, ['activo' => 0]);
+    }
+    return redirect()->to('productos');
+}
+```
+
+### Ventajas del Soft Delete
+
+- Los productos no se eliminan de la base de datos
+- Se marca el campo `activo = 0`
+- Se mantiene el historial completo
+- Puede restaurarse si fue eliminado por error
+
+<Warning>
+  Productos eliminados **no** aparecen en el catálogo ni pueden venderse, pero se conservan en el historial de ventas previas.
+</Warning>
+
+## Productos Eliminados
+
+Puedes ver y restaurar productos eliminados:
+
+<Steps>
+  <Step title="Ver productos eliminados">
+    Ve a **Productos → Productos Eliminados** o accede a `/productos/baja`
+  </Step>
+
+  <Step title="Restaurar producto">
+    Haz clic en el ícono de restaurar del producto deseado:
+
+    ```php
+    public function reingresar($id = null)
+    {
+        if ($id !== null) {
+            $this->productosModel->update($id, ['activo' => 1]);
+        }
+        return redirect()->to('productos');
+    }
+    ```
+  </Step>
+
+  <Step title="Verificar">
+    El producto vuelve a aparecer en el catálogo activo y está disponible para ventas.
+  </Step>
+</Steps>
+
+## Control de Inventario
+
+### Productos Inventariables
+
+Cuando un producto tiene `inventariable = 1`:
+
+- El sistema controla las existencias
+- Al vender, se deduce automáticamente del stock
+- No se permite vender si no hay suficientes existencias
+
+```php
+// En app/Controllers/Caja.php
+if ($productoInventariable == 1 && $productoExistencia < $cantidad) {
+    $error = 'No hay suficientes existencias';
+}
+```
+
+### Productos No Inventariables
+
+Para servicios o productos sin control de stock (`inventariable = 0`):
+
+- Se pueden vender sin restricciones
+- El campo `existencia` se ignora
+- Útil para: servicios, productos digitales, artículos bajo pedido
+
+<Tip>
+  Usa productos no inventariables para servicios como "Envío", "Instalación" o "Garantía Extendida".
+</Tip>
+
+## Actualización de Stock
+
+### Actualización Automática
+
+El stock se actualiza automáticamente en dos escenarios:
+
+**Al completar una venta:**
+```php
+// En app/Controllers/Ventas.php
+if ($datosProducto['inventariable'] == 1) {
+    $productosModel->actualizaStock($productoId, $cantidad, '-');
+}
+```
+
+**Al cancelar una venta:**
+```php
+if ($datosProducto['inventariable'] == 1) {
+    $productosModel->actualizaStock($productoId, $cantidad, '+');
+}
+```
+
+### Actualización Manual
+
+Para ajustar el inventario manualmente:
+
+1. Edita el producto
+2. Modifica el campo **Existencia**
+3. Guarda los cambios
+
+<Warning>
+  En la versión actual no hay historial de movimientos de inventario. Considera actualizar a POS CDP Pro para trazabilidad completa.
+</Warning>
+
+## Búsqueda de Productos
+
+### Autocompletado en Caja
+
+El sistema incluye búsqueda inteligente en la interfaz de caja:
+
+```php
+public function autocompleteData()
+{
+    $valor = $this->request->getGet('term');
+    $productos = $this->productosModel->buscarPorCodigoNombre($valor);
+    
+    foreach ($productos as $producto) {
+        $data['id']    = $producto['id'];
+        $data['value'] = $producto['codigo'];
+        $data['label'] = $producto['codigo'] . ' - ' . $producto['nombre'];
+        array_push($resultado, $data);
+    }
+    
+    echo json_encode($resultado);
+}
+```
+
+Busca productos por:
+- Código completo o parcial
+- Nombre completo o parcial
+- Muestra ambos en los resultados
+
+## Estructura de la Tabla
+
+La tabla `productos` tiene la siguiente estructura:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | INT | Identificador único |
+| `codigo` | VARCHAR(20) | Código del producto (único) |
+| `nombre` | VARCHAR(255) | Nombre del producto |
+| `precio` | DECIMAL(10,2) | Precio de venta |
+| `inventariable` | TINYINT | 1 = controla stock, 0 = no |
+| `existencia` | INT | Cantidad en inventario |
+| `activo` | TINYINT | 1 = activo, 0 = eliminado |
+
+## Mejores Prácticas
+
+<Accordion title="Usa códigos significativos">
+  En lugar de números secuenciales (1, 2, 3), usa códigos descriptivos:
+  - `CAFE-001` para productos de cafetería
+  - `ELEC-MON-27` para monitor de 27 pulgadas
+  - `SRV-INST` para servicio de instalación
+  Esto facilita la búsqueda y organización.
+</Accordion>
+
+<Accordion title="Revisa el inventario regularmente">
+  Aunque el sistema actualiza el stock automáticamente, realiza auditorías físicas periódicamente para:
+  - Detectar mermas o pérdidas
+  - Identificar productos obsoletos
+  - Ajustar existencias por deterioro
+</Accordion>
+
+<Accordion title="No elimines productos con historial">
+  Si un producto ya se ha vendido, en lugar de eliminarlo:
+  - Ponlo en existencia 0
+  - O márcalo como no inventariable
+  - Así se mantiene el historial de ventas intacto
+</Accordion>
+
+<Accordion title="Usa decimales solo cuando sea necesario">
+  Para la mayoría de productos, precios enteros (100.00, 50.00) son suficientes. Usa decimales (19.99, 15.50) solo cuando tenga sentido comercial.
+</Accordion>
+
+## Limitaciones Actuales
+
+- No hay categorías o clasificaciones de productos
+- No se soportan variantes (tallas, colores)
+- No hay imágenes de productos
+- No hay códigos de barras generados automáticamente
+- No hay control de múltiples precios (mayoreo, menudeo)
+- No hay historial de cambios de precio
+
+<Tip>
+  Si necesitas estas funcionalidades avanzadas, considera **POS CDP Pro** que incluye:
+  - Categorías y subcategorías
+  - Múltiples imágenes por producto
+  - Unidades de medida
+  - Precios diferenciados
+  - Historial de movimientos de inventario
+</Tip>
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Caja de Cobro"
+    icon="cash-register"
+    href="/features/sales"
+  >
+    Cómo usar productos en ventas
+  </Card>
+  <Card
+    title="Reportes de Inventario"
+    icon="chart-line"
+    href="/features/reports"
+  >
+    Genera reportes de productos
+  </Card>
+  <Card
+    title="Modelos"
+    icon="database"
+    href="/development/models"
+  >
+    Estructura del ProductosModel
+  </Card>
+</CardGroup>

@@ -1,0 +1,73 @@
+---
+title: Configuración del Entorno
+description: Configurar variables de entorno en el archivo .env
+---
+
+## Archivo de Configuración
+
+El archivo `.env` contiene todas las variables de configuración del sistema.
+
+<Steps>
+  <Step title="Copiar plantilla">
+    ```bash
+    cp env .env
+    ```
+  </Step>
+
+  <Step title="Editar configuración">
+    Abre `.env` con tu editor preferido:
+    ```bash
+    nano .env
+    # o
+    vim .env
+    ```
+  </Step>
+</Steps>
+
+## Variables Principales
+
+### Aplicación
+
+```bash
+# Entorno: development, production, testing
+CI_ENVIRONMENT = production
+
+# URL base del sitio (incluye /public/ si es necesario)
+app.baseURL = 'http://localhost/pos-cdp-lite/public/'
+
+# Nombre de la aplicación
+app.appName = 'POS CDP Lite'
+```
+
+### Base de Datos
+
+```bash
+database.default.hostname = localhost
+database.default.database = pos-cdp-lite
+database.default.username = root
+database.default.password = 
+database.default.DBDriver = MySQLi
+database.default.DBPrefix = 
+database.default.port = 3306
+```
+
+### Sesiones
+
+```bash
+# Tiempo de expiración en segundos (7200 = 2 horas)
+session.expiration = 7200
+
+# Directorio para archivos de sesión
+session.savePath = writable/session
+
+# Nombre de la cookie de sesión
+session.cookieName = 'ci_session'
+```
+
+<Card
+  title="Migraciones"
+  icon="database"
+  href="/guides/running-migrations"
+>
+  Inicializar la base de datos
+</Card>

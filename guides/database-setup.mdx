@@ -1,0 +1,88 @@
+---
+title: Configuración de Base de Datos
+description: Crear y configurar la base de datos MySQL para POS CDP Lite
+---
+
+## Crear Base de Datos
+
+<Steps>
+  <Step title="Conectar a MySQL">
+    ```bash
+    mysql -u root -p
+    ```
+    Ingresa tu contraseña cuando se solicite.
+  </Step>
+
+  <Step title="Crear la base de datos">
+    ```sql
+    CREATE DATABASE IF NOT EXISTS `pos-cdp-lite` 
+    DEFAULT CHARACTER SET utf8mb4 
+    COLLATE utf8mb4_unicode_ci;
+    ```
+
+    <Warning>
+      **Importante:** Usa `utf8mb4` y `utf8mb4_unicode_ci` para soporte completo de caracteres especiales, acentos y emojis.
+    </Warning>
+  </Step>
+
+  <Step title="Verificar creación">
+    ```sql
+    SHOW DATABASES LIKE 'pos-cdp-lite';
+    ```
+  </Step>
+</Steps>
+
+## Crear Usuario de Base de Datos
+
+<Tip>
+  Por seguridad, es recomendable crear un usuario específico con permisos limitados solo a esta base de datos.
+</Tip>
+
+```sql
+-- Crear usuario
+CREATE USER 'pos_user'@'localhost' IDENTIFIED BY 'tu_password_segura';
+
+-- Otorgar permisos
+GRANT ALL PRIVILEGES ON `pos-cdp-lite`.* TO 'pos_user'@'localhost';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+```
+
+## Character Set y Collation
+
+### ¿Por qué utf8mb4?
+
+- **utf8mb4:** Soporte completo de caracteres Unicode incluyendo emojis
+- **utf8mb4_unicode_ci:** Comparaciones insensibles a mayúsculas con reglas Unicode
+
+```sql
+-- Verificar configuración
+SELECT 
+    DEFAULT_CHARACTER_SET_NAME,
+    DEFAULT_COLLATION_NAME
+FROM information_schema.SCHEMATA
+WHERE SCHEMA_NAME = 'pos-cdp-lite';
+```
+
+## Configurar Conexión
+
+Edita el archivo `.env`:
+
+```bash
+database.default.hostname = localhost
+database.default.database = pos-cdp-lite
+database.default.username = pos_user
+database.default.password = tu_password_segura
+database.default.DBDriver = MySQLi
+database.default.DBPrefix = 
+database.default.port = 3306
+```
+
+<Card
+  title="Variables de Entorno"
+  icon="file-code"
+  href="/guides/environment-config"
+>
+  Configuración completa del archivo .env
+</Card>

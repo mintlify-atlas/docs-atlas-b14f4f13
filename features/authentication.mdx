@@ -1,0 +1,238 @@
+---
+title: Autenticación
+description: Sistema de inicio de sesión y gestión de contraseñas en POS CDP Lite
+---
+
+## Sistema de Autenticación
+
+POS CDP Lite incluye un sistema de autenticación basado en sesiones que protege el acceso al sistema y permite gestionar credenciales de usuario.
+
+## Inicio de Sesión
+
+### Proceso de Login
+
+El flujo de autenticación sigue estos pasos:
+
+<Steps>
+  <Step title="Presentación de credenciales">
+    El usuario ingresa su nombre de usuario y contraseña en el formulario de login.
+  </Step>
+
+  <Step title="Validación de datos">
+    El sistema valida que ambos campos estén completos:
+
+    ```php
+    $reglas = [
+        'usuario'  => 'required',
+        'password' => ['label' => 'contraseña', 'rules' => 'required'],
+    ];
+    ```
+  </Step>
+
+  <Step title="Verificación en base de datos">
+    El sistema busca el usuario y verifica la contraseña hasheada:
+
+    ```php
+    $usuarioModel = new UsuariosModel();
+    $usuarioData = $usuarioModel->validaUsuario($post['usuario'], $post['password']);
+    ```
+  </Step>
+
+  <Step title="Creación de sesión">
+    Si las credenciales son correctas, se crea una sesión con los datos del usuario:
+
+    ```php
+    $sesionData = [
+        'usuarioLogin'  => true,
+        'usuarioId'     => $usuarioData['id'],
+        'usuarioNombre' => $usuarioData['nombre'],
+    ];
+    $this->session->set($sesionData);
+    ```
+  </Step>
+
+  <Step title="Redirección al dashboard">
+    El usuario es redirigido al panel principal: `/inicio`
+  </Step>
+</Steps>
+
+### Credenciales por Defecto
+
+Después de la instalación, el sistema incluye un usuario administrador:
+
+- **Usuario:** `admin`
+- **Contraseña:** `admin`
+
+<Warning>
+  **¡Importante!** Cambia estas credenciales inmediatamente después del primer inicio de sesión por seguridad.
+</Warning>
+
+## Protección de Rutas
+
+Todas las rutas del sistema (excepto login) están protegidas con un filtro de autenticación:
+
+```php
+// Ejemplo de rutas protegidas en Config/Routes.php
+$routes->get('productos', 'Productos::index', ["filter" => "auth"]);
+$routes->get('caja', 'Caja::index', ["filter" => "auth"]);
+$routes->get('ventas', 'Ventas::index', ["filter" => "auth"]);
+```
+
+El filtro `auth` verifica que:
+1. La sesión existe
+2. La variable `usuarioLogin` es verdadera
+3. Si no cumple, redirige al login
+
+## Cambio de Contraseña
+
+Los usuarios pueden actualizar su contraseña desde el sistema:
+
+### Proceso de Actualización
+<Steps>
+  <Step title="Acceder al formulario">
+    Desde el menú de usuario, selecciona "Cambiar Contraseña" o accede a `/cambia-password`
+  </Step>
+
+  <Step title="Ingresar nueva contraseña">
+    El formulario solicita:
+    - Nueva contraseña
+    - Confirmación de contraseña
+
+    El sistema valida que ambas coincidan:
+
+    ```php
+    $reglas = [
+        'password'     => ['label' => 'contraseña', 'rules' => 'required'],
+        'con_password' => ['label' => 'confirmar contraseña', 
+                           'rules' => 'required|matches[password]'],
+    ];
+    ```
+  </Step>
+
+  <Step title="Hasheo seguro">
+    La contraseña se hashea usando el algoritmo por defecto de PHP:
+
+    ```php
+    $hash = password_hash($post['password'], PASSWORD_DEFAULT);
+    $usuarioModel->update($post['id_usuario'], ['password' => $hash]);
+    ```
+
+    <Info>
+      `PASSWORD_DEFAULT` actualmente usa bcrypt, pero automáticamente se actualizará a algoritmos más fuertes en futuras versiones de PHP.
+    </Info>
+  </Step>
+
+  <Step title="Confirmación">
+    El sistema muestra un mensaje de éxito y la contraseña queda actualizada inmediatamente.
+  </Step>
+</Steps>
+
+## Cierre de Sesión
+
+Para cerrar sesión:
+
+1. Haz clic en tu nombre de usuario en la barra superior
+2. Selecciona "Cerrar Sesión"
+3. O accede directamente a `/logout`
+
+El proceso de logout:
+
+```php
+public function logout()
+{
+    if ($this->session->get('usuarioLogin')) {
+        $this->session->destroy();
+    }
+    return redirect()->to(base_url());
+}
+```
+
+<Note>
+  Al cerrar sesión, se destruyen todos los datos de la sesión y el usuario es redirigido al login.
+</Note>
+
+## Seguridad
+
+### Almacenamiento de Contraseñas
+
+- Las contraseñas **nunca** se almacenan en texto plano
+- Se usa hashing con `password_hash()` y `PASSWORD_DEFAULT`
+- La verificación se realiza con `password_verify()` que es resistente a timing attacks
+
+### Protección CSRF
+
+CodeIgniter 4 incluye protección CSRF por defecto:
+- Todos los formularios incluyen un token CSRF
+- Las peticiones POST sin token válido son rechazadas
+
+### Validación de Entrada
+
+- Todos los campos son validados con reglas específicas
+- Los datos se escapan antes de mostrarlos con `esc()`
+- Se usan prepared statements para prevenir SQL injection
+
+## Mejores Prácticas
+
+<Accordion title="Usa contraseñas fuertes">
+  - Mínimo 8 caracteres
+  - Combina mayúsculas, minúsculas, números y símbolos
+  - No uses contraseñas comunes o predecibles
+</Accordion>
+
+<Accordion title="Cambia las credenciales por defecto">
+  El usuario `admin` con contraseña `admin` es conocido públicamente. Cámbialo inmediatamente después de la instalación.
+</Accordion>
+
+<Accordion title="Cierra sesión al terminar">
+  Especialmente en computadoras compartidas, siempre cierra sesión al terminar de usar el sistema.
+</Accordion>
+
+<Accordion title="Configura timeout de sesión">
+  En el archivo `.env`, puedes configurar el tiempo de expiración de la sesión:
+
+  ```bash
+  session.expiration = 7200  # 2 horas en segundos
+  ```
+</Accordion>
+
+## Limitaciones Actuales
+
+POS CDP Lite versión 1.1.3 tiene las siguientes limitaciones:
+
+- **Usuario único:** El sistema soporta un solo usuario administrador
+- **Sin roles:** No hay sistema de permisos o roles diferenciados
+- **Sin recuperación de contraseña:** No existe funcionalidad de "olvidé mi contraseña"
+- **Sin autenticación de dos factores:** No hay 2FA disponible
+
+<Tip>
+  Si necesitas múltiples usuarios y roles, considera actualizar a **POS CDP Pro** que incluye gestión completa de usuarios.
+</Tip>
+
+## Extensiones Futuras
+
+Si deseas extender el sistema de autenticación, considera:
+
+- Agregar múltiples usuarios con diferentes niveles de acceso
+- Implementar recuperación de contraseña por email
+- Añadir logs de inicio de sesión
+- Implementar bloqueo después de intentos fallidos
+- Agregar autenticación de dos factores (2FA)
+
+## Recursos Relacionados
+
+<CardGroup cols={2}>
+  <Card
+    title="Configuración del Sistema"
+    icon="gear"
+    href="/features/configuration"
+  >
+    Personaliza otros aspectos del sistema
+  </Card>
+  <Card
+    title="Arquitectura"
+    icon="diagram-project"
+    href="/development/architecture"
+  >
+    Entiende cómo funciona el MVC
+  </Card>
+</CardGroup>

@@ -1,0 +1,71 @@
+---
+title: Controladores
+description: Lógica de negocio y procesamiento de peticiones
+---
+
+## Controladores del Sistema
+
+Los controladores coordinan el flujo de datos entre modelos y vistas.
+
+## Controladores Principales
+
+### Login
+
+**Responsabilidades:**
+- Autenticación de usuarios
+- Gestión de sesiones
+- Cambio de contraseña
+
+**Métodos principales:**
+- `index()` - Formulario de login
+- `login()` - Procesar autenticación
+- `logout()` - Cerrar sesión
+- `cambiaPassword()` - Actualizar contraseña
+
+### Productos
+
+**Responsabilidades:**
+- CRUD de productos
+- Control de inventario
+- Soft delete
+
+**Métodos:**
+- `index()` - Listar productos activos
+- `create()` - Crear producto
+- `update($id)` - Actualizar producto
+- `delete($id)` - Eliminar (soft)
+- `reingresar($id)` - Restaurar producto
+- `autocompleteData()` - Búsqueda AJAX
+
+### Caja
+
+**Responsabilidades:**
+- Interfaz POS
+- Carrito temporal
+- Validación de existencias
+
+**Métodos:**
+- `index()` - Vista de caja
+- `inserta()` - Agregar producto al carrito
+- `elimina()` - Quitar producto
+
+### Ventas
+
+**Responsabilidades:**
+- Procesar ventas
+- Generar tickets
+- Cancelar ventas
+
+**Métodos:**
+- `guarda()` - Completar venta
+- `verTicket($id)` - Mostrar ticket
+- `generaTicket($id)` - PDF del ticket
+- `cancelar($id)` - Cancelar venta
+
+<Card
+  title="Arquitectura"
+  icon="diagram-project"
+  href="/development/architecture"
+>
+  Patrón MVC completo
+</Card>

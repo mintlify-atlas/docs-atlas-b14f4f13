@@ -1,0 +1,302 @@
+---
+title: Instalación
+description: Guía paso a paso para instalar POS CDP Lite en tu servidor
+---
+
+## Métodos de Instalación
+
+POS CDP Lite ofrece tres métodos de instalación según tus preferencias:
+
+<CardGroup cols={3}>
+  <Card title="Composer" icon="php">
+    Recomendado para desarrollo
+  </Card>
+  <Card title="Git" icon="git">
+    Ideal para contribuir al proyecto
+  </Card>
+  <Card title="Descarga Manual" icon="download">
+    Más simple para producción
+  </Card>
+</CardGroup>
+
+## Instalación con Composer
+
+<Steps>
+  <Step title="Instalar vía Composer">
+    Ejecuta el siguiente comando en tu terminal:
+
+    ```bash
+    composer create-project mroblesdev/pos-cdp-lite
+    ```
+
+    <Info>
+      Para PHP 7.4, usa la versión específica:
+      ```bash
+      composer create-project mroblesdev/pos-cdp-lite:v1.1.3
+      ```
+    </Info>
+  </Step>
+
+  <Step title="Navegar al directorio">
+    ```bash
+    cd pos-cdp-lite
+    ```
+  </Step>
+</Steps>
+
+## Instalación con Git
+
+<Steps>
+  <Step title="Clonar el repositorio">
+    ```bash
+    git clone https://github.com/mroblesdev/pos-cdp-lite.git
+    ```
+  </Step>
+
+  <Step title="Navegar al directorio">
+    ```bash
+    cd pos-cdp-lite
+    ```
+  </Step>
+
+  <Step title="Instalar dependencias (opcional)">
+    Si tienes Composer instalado:
+
+    ```bash
+    composer install
+    ```
+  </Step>
+</Steps>
+
+## Instalación Manual
+
+<Steps>
+  <Step title="Descargar el archivo ZIP">
+    Descarga la última versión desde [GitHub Releases](https://github.com/mroblesdev/pos-cdp-lite/releases)
+  </Step>
+
+  <Step title="Extraer archivos">
+    Descomprime el archivo ZIP y copia el contenido a tu servidor web (por ejemplo, en `/var/www/html/` o `htdocs/`)
+  </Step>
+</Steps>
+
+## Configuración de la Base de Datos
+
+<Steps>
+  <Step title="Crear la base de datos">
+    Conecta a MySQL y ejecuta:
+
+    ```sql
+    CREATE DATABASE IF NOT EXISTS `pos-cdp-lite` 
+    DEFAULT CHARACTER SET utf8mb4 
+    COLLATE utf8mb4_unicode_ci;
+    ```
+
+    <Warning>
+      Es importante usar `utf8mb4` y `utf8mb4_unicode_ci` para soportar correctamente caracteres especiales y emojis.
+    </Warning>
+  </Step>
+
+  <Step title="Crear usuario de base de datos (opcional pero recomendado)">
+    ```sql
+    CREATE USER 'pos_user'@'localhost' IDENTIFIED BY 'tu_password_segura';
+    GRANT ALL PRIVILEGES ON `pos-cdp-lite`.* TO 'pos_user'@'localhost';
+    FLUSH PRIVILEGES;
+    ```
+  </Step>
+</Steps>
+
+## Configuración del Entorno
+
+<Steps>
+  <Step title="Copiar archivo de configuración">
+    Copia el archivo `env` a `.env`:
+
+    ```bash
+    cp env .env
+    ```
+  </Step>
+
+  <Step title="Editar configuración">
+    Abre el archivo `.env` y configura las siguientes variables:
+
+    ```bash
+    # URL base de la aplicación
+    app.baseURL = 'http://localhost/pos-cdp-lite/public/'
+
+    # Configuración de base de datos
+    database.default.hostname = localhost
+    database.default.database = pos-cdp-lite
+    database.default.username = root
+    database.default.password = password
+    database.default.DBDriver = MySQLi
+    ```
+
+    <Note>
+      Ajusta `app.baseURL` según tu configuración. Si usas el servidor de desarrollo de PHP, será `http://localhost:8080`
+    </Note>
+  </Step>
+</Steps>
+
+## Inicializar la Base de Datos
+
+Tienes dos opciones para crear las tablas e insertar datos iniciales:
+
+<Tabs>
+  <Tab title="Opción 1: Migraciones (Recomendado)">
+    ```bash
+    # Ejecutar migraciones
+    php spark migrate
+
+    # Cargar datos iniciales
+    php spark db:seed CargaSeeder
+    ```
+
+    Esta opción es ideal para desarrollo y permite un control granular de la estructura de la base de datos.
+  </Tab>
+
+  <Tab title="Opción 2: Importar SQL">
+    Importa el archivo `app/Database/pos-cdp-lite.sql` usando:
+
+    - **phpMyAdmin:** Ir a "Importar" y seleccionar el archivo
+    - **Línea de comandos:**
+      ```bash
+      mysql -u root -p pos-cdp-lite < app/Database/pos-cdp-lite.sql
+      ```
+
+    Esta opción es más rápida y recomendada para producción.
+  </Tab>
+</Tabs>
+
+## Configuración del Servidor Web
+
+<Tabs>
+  <Tab title="Servidor de Desarrollo PHP">
+    La forma más rápida de probar el sistema:
+
+    ```bash
+    php spark serve
+    ```
+
+    El sistema estará disponible en: `http://localhost:8080`
+
+    <Info>
+      Puedes especificar un puerto diferente:
+      ```bash
+      php spark serve --port=8081
+      ```
+    </Info>
+  </Tab>
+
+  <Tab title="Apache">
+    1. Copia los archivos al directorio web (ej: `/var/www/html/pos-cdp-lite/`)
+    2. Asegúrate de que el módulo `mod_rewrite` está habilitado:
+       ```bash
+       sudo a2enmod rewrite
+       sudo systemctl restart apache2
+       ```
+    3. Configura el VirtualHost o accede vía: `http://localhost/pos-cdp-lite/public/`
+
+    <Warning>
+      El directorio `public/` debe ser la raíz del documento web para mayor seguridad.
+    </Warning>
+  </Tab>
+
+  <Tab title="Nginx">
+    Ejemplo de configuración de servidor:
+
+    ```nginx
+    server {
+        listen 80;
+        server_name pos-cdp-lite.local;
+        root /var/www/pos-cdp-lite/public;
+
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Verificar la Instalación
+
+<Steps>
+  <Step title="Acceder al sistema">
+    Abre tu navegador y visita la URL configurada:
+    - Servidor de desarrollo: `http://localhost:8080`
+    - Apache: `http://localhost/pos-cdp-lite/public/`
+  </Step>
+
+  <Step title="Iniciar sesión">
+    Usa las credenciales por defecto:
+
+    - **Usuario:** `admin`
+    - **Contraseña:** `admin`
+
+    <Warning>
+      ¡Cambia la contraseña inmediatamente después del primer inicio de sesión!
+    </Warning>
+  </Step>
+
+  <Step title="Explorar el sistema">
+    Deberías ver el dashboard principal. Explora las diferentes secciones para familiarizarte con el sistema.
+  </Step>
+</Steps>
+
+## Solución de Problemas
+
+<Accordion title="Error: No se puede conectar a la base de datos">
+  - Verifica que MySQL está en ejecución
+  - Confirma las credenciales en el archivo `.env`
+  - Asegúrate de que la base de datos existe
+  - Verifica que el usuario tiene permisos en la base de datos
+</Accordion>
+
+<Accordion title="Error 404 en todas las rutas excepto /">
+  - Verifica que `mod_rewrite` está habilitado en Apache
+  - Revisa que el archivo `.htaccess` existe en el directorio `public/`
+  - Confirma que `AllowOverride All` está configurado en Apache
+</Accordion>
+
+<Accordion title="Error: Class not found">
+  - Ejecuta `composer install` para instalar dependencias
+  - Verifica que el autoload está correctamente configurado
+  - Limpia el caché: `php spark cache:clear`
+</Accordion>
+
+<Accordion title="Problemas de permisos">
+  Asegúrate de que el servidor web tiene permisos de escritura en:
+  ```bash
+  chmod -R 755 writable/
+  chmod -R 755 public/
+  ```
+</Accordion>
+
+## Próximos Pasos
+
+<CardGroup cols={2}>
+  <Card
+    title="Inicio Rápido"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Aprende a usar el sistema
+  </Card>
+  <Card
+    title="Configuración Avanzada"
+    icon="gear"
+    href="/guides/environment-config"
+  >
+    Personaliza tu instalación
+  </Card>
+</CardGroup>
