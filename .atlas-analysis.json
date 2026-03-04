@@ -1,0 +1,95 @@
+{
+  "projectType": "saas",
+  "projectName": "POS CDP Lite",
+  "projectDescription": "Sistema de Punto de Venta (Point of Sale) open-source para gestionar ventas, inventario y reportes en tiendas.",
+  "theme": "linden",
+  "primaryColor": "#176f9d",
+  "lightColor": "#82b4c6",
+  "darkColor": "#cce1e9",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentación",
+        "groups": [
+          {
+            "group": "Comenzar",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Funcionalidades",
+            "pages": [
+              "features/authentication",
+              "features/products",
+              "features/sales",
+              "features/reports",
+              "features/configuration"
+            ]
+          },
+          {
+            "group": "Guías",
+            "pages": [
+              "guides/database-setup",
+              "guides/environment-config",
+              "guides/running-migrations",
+              "guides/ticket-generation"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Desarrollo",
+        "groups": [
+          {
+            "group": "Arquitectura",
+            "pages": [
+              "development/architecture",
+              "development/models",
+              "development/controllers",
+              "development/views"
+            ]
+          },
+          {
+            "group": "Contribuir",
+            "pages": [
+              "contributing/getting-started",
+              "contributing/code-standards"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Autenticación de usuarios",
+    "Gestión de catálogo de productos con inventario",
+    "Caja de cobro (POS)",
+    "Generación de tickets de venta en PDF",
+    "Historial de ventas con reimpresión y cancelación",
+    "Reportes de ventas y productos",
+    "Configuración del sistema"
+  ],
+  "publicApiSurface": [
+    "Login::index() - Página de inicio de sesión",
+    "Login::login() - Autenticación de usuario",
+    "Login::logout() - Cerrar sesión",
+    "Productos::index() - Listar productos activos",
+    "Productos::create() - Crear nuevo producto",
+    "Productos::update($id) - Actualizar producto",
+    "Productos::delete($id) - Eliminar producto (soft delete)",
+    "Caja::index() - Interfaz de caja de cobro",
+    "Caja::inserta() - Agregar producto a venta temporal",
+    "Caja::elimina() - Eliminar producto de venta temporal",
+    "Ventas::index() - Historial de ventas",
+    "Ventas::guarda() - Guardar venta y generar folio",
+    "Ventas::generaTicket($id) - Generar PDF de ticket",
+    "Ventas::cancelar($id) - Cancelar venta",
+    "Reportes::verReporteVentas() - Reporte de ventas por rango de fechas",
+    "Reportes::verReporteProductos() - Reporte de inventario de productos",
+    "Configuracion::edit() - Ver configuración del sistema",
+    "Configuracion::update() - Actualizar configuración"
+  ]
+}
